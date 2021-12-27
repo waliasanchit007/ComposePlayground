@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ComposePlayground</string>
+    <string name="title_activity_compose_worksheet">ComposeWorksheet</string>
+</resources>

@@ -27,7 +27,7 @@ import com.example.composeplayground.ui.theme.ComposePlaygroundTheme
 
 class ComposeWorksheet : ComponentActivity() {
 
-    val viewModel by viewModels<WorksheetViewModel>()
+    private val viewModel by viewModels<WorksheetViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,59 +36,43 @@ class ComposeWorksheet : ComponentActivity() {
                 // A surface container using the 'background' color from the theme
                 Surface(color = MaterialTheme.colors.background) {
                     Box(modifier = Modifier.fillMaxSize()) {
-                        MyComposable()
+                        MyComposable(viewModel)
                     }
                 }
             }
         }
     }
 }
-@Preview(showBackground = true)
-@Composable
-fun MyPreview() {
-    ComposePlaygroundTheme {
-        MyComposable()
-    }
-}
 
 @Composable
-fun MyComposable(){
-    var firstName by remember { mutableStateOf("") }
-    var secondName by remember { mutableStateOf("") }
-    var pan by remember { mutableStateOf("") }
+fun MyComposable(viewModel: WorksheetViewModel){
+    val firstName = viewModel.firstName
+    val secondName = viewModel.secondName
+    val pan  = viewModel.pan
     var panVisibility by remember { mutableStateOf(false) }
-
-    val onFirstNameChange = {newFirstName: String->
-        firstName = newFirstName
-    }
-    val onSecondNameChange = {newSecondName: String->
-        secondName = newSecondName
-    }
-    val onPanChange = {newPanChange: String->
-        pan = newPanChange
-    }
 
     Column(modifier = Modifier
         .padding(12.dp)
+        .verticalScroll(rememberScrollState(), true)
     ) {
         TextField(
             value = firstName,
             onValueChange = {
-                onFirstNameChange(it)
+                viewModel.onFirstNameChange(it)
             },
             label = { Text("First Name") }
         )
         TextField(
             value = secondName,
             onValueChange = {
-                onSecondNameChange(it)
+                viewModel.onSecondNameChange(it)
             },
             label = { Text("Second Name") }
         )
         TextField(
             value = pan,
             onValueChange = {
-                onPanChange(it)
+                viewModel.onPanChange(it)
             },
             visualTransformation =if (panVisibility) VisualTransformation.None else PasswordVisualTransformation(),
             label = { Text("Pan Number") }
@@ -99,34 +83,27 @@ fun MyComposable(){
             Text(if(!panVisibility) "View Pan" else "Hide Pan")
         }
 
-        var selected by remember {
-            mutableStateOf("")
-        }
-        val updateRadioGroupSelection = { data : String ->
-            selected = data
-        }
-        RadioButtonGroup(selected, updateRadioGroupSelection)
-
+        val selected = viewModel.genderSelected
+        RadioButtonGroup(selected, viewModel.updateRadioGroupSelection)
         Spacer(modifier = Modifier.size(4.dp))
 
-        val arrayOfHobbies by remember{ mutableStateOf(mutableListOf<String>())}
+        CheckboxGroup( viewModel.onCheckHobbies )
 
-        val onCheckHobbies = { hobby: String, toAdd:Boolean ->
-            if(toAdd){
-                arrayOfHobbies.add(hobby)
-            }else{
-                arrayOfHobbies.remove(hobby)
-            }
-            arrayOfHobbies.forEach { Log.i("sanchit", "resultUri = {${it}}") }
-        }
-        CheckboxGroup(onCheckHobbies)
+        var pdfUri = viewModel.pdfUri
 
-        var pdfUri by remember{ mutableStateOf<Uri?>(null)}
-        UploadPdf(pdfUri) { pdfUri = it }
+        UploadPdf(pdfUri, viewModel.onGetPdfUri)
         Spacer(modifier = Modifier.size(10.dp))
 
-        var imageUri by remember { mutableStateOf<Uri?>(null) }
-        ShowImage(imageUri) { imageUri = it }
+
+        val imageUri = viewModel.imageUri
+        ShowImage(imageUri, viewModel.onGetImageUri)
+
+        Spacer(modifier = Modifier.size(10.dp))
+        Button(onClick = { viewModel.onSave() }) {
+            Text(text = "Save")
+        }
+        Spacer(modifier = Modifier.size(10.dp))
+        Text(text = viewModel.text)
     }
 }
 
@@ -138,7 +115,6 @@ fun UploadPdf(pdfUri: Uri?, onGetUri:(Uri) -> Unit){
             onGetUri(uri)
         }
     }
-    Log.i("sanchit", "resultUri = {$pdfUri}")
     Button(onClick = {launcher.launch("*/*")}){
         Text(text = "Upload Pdf")
     }
@@ -157,7 +133,7 @@ fun ShowImage(imageUri: Uri?, onGetImageUri:(Uri) -> Unit) {
     }
 
     Column {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box() {
             Column{
 
                 imageUri?.let {
@@ -250,7 +226,6 @@ fun CheckboxWithText(txt:String,onCheckChange: (hobby : String, toAdd: Boolean) 
     var tick by remember{ mutableStateOf(false)}
     Row{
         Checkbox(checked =tick , onCheckedChange = {
-            Log.i("sanchit", "on checked change = $it")
             onCheckChange(txt, it)
             tick = it
         })

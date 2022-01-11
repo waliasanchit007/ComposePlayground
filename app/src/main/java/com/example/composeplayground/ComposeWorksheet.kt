@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -25,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import com.example.composeplayground.ui.theme.ComposePlaygroundTheme
 
 class ComposeWorksheet : ComponentActivity() {
+
+    val viewModel by viewModels<WorksheetViewModel>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -54,6 +58,15 @@ fun MyComposable(){
     var pan by remember { mutableStateOf("") }
     var panVisibility by remember { mutableStateOf(false) }
 
+    val onFirstNameChange = {newFirstName: String->
+        firstName = newFirstName
+    }
+    val onSecondNameChange = {newSecondName: String->
+        secondName = newSecondName
+    }
+    val onPanChange = {newPanChange: String->
+        pan = newPanChange
+    }
 
     Column(modifier = Modifier
         .padding(12.dp)
@@ -61,85 +74,101 @@ fun MyComposable(){
         TextField(
             value = firstName,
             onValueChange = {
-                firstName = it
+                onFirstNameChange(it)
             },
             label = { Text("First Name") }
         )
-
         TextField(
             value = secondName,
             onValueChange = {
-                secondName = it
+                onSecondNameChange(it)
             },
             label = { Text("Second Name") }
         )
-
         TextField(
             value = pan,
             onValueChange = {
-                pan = it
+                onPanChange(it)
             },
             visualTransformation =if (panVisibility) VisualTransformation.None else PasswordVisualTransformation(),
             label = { Text("Pan Number") }
         )
-
         Button(
             onClick = { panVisibility = !panVisibility }
         ) {
-                Text(if(!panVisibility) "View Pan" else "Hide Pan")
+            Text(if(!panVisibility) "View Pan" else "Hide Pan")
         }
 
-        RadioButtonGroup()
+        var selected by remember {
+            mutableStateOf("")
+        }
+        val updateRadioGroupSelection = { data : String ->
+            selected = data
+        }
+        RadioButtonGroup(selected, updateRadioGroupSelection)
 
         Spacer(modifier = Modifier.size(4.dp))
 
-        CheckboxGroup()
+        val arrayOfHobbies by remember{ mutableStateOf(mutableListOf<String>())}
 
-        UploadPdf()
+        val onCheckHobbies = { hobby: String, toAdd:Boolean ->
+            if(toAdd){
+                arrayOfHobbies.add(hobby)
+            }else{
+                arrayOfHobbies.remove(hobby)
+            }
+            arrayOfHobbies.forEach { Log.i("sanchit", "resultUri = {${it}}") }
+        }
+        CheckboxGroup(onCheckHobbies)
 
+        var pdfUri by remember{ mutableStateOf<Uri?>(null)}
+        UploadPdf(pdfUri) { pdfUri = it }
         Spacer(modifier = Modifier.size(10.dp))
 
-        ShowImage()
+        var imageUri by remember { mutableStateOf<Uri?>(null) }
+        ShowImage(imageUri) { imageUri = it }
     }
 }
 
 @Composable
-fun UploadPdf(){
-    var resultUri by remember { mutableStateOf<Uri?>(null) }
-
+fun UploadPdf(pdfUri: Uri?, onGetUri:(Uri) -> Unit){
     val launcher = rememberLauncherForActivityResult(contract =
     ActivityResultContracts.GetContent()) { uri: Uri? ->
-        resultUri = uri
+        if (uri != null) {
+            onGetUri(uri)
+        }
     }
-    Log.i("sanchit", "resultUri = {$resultUri}")
+    Log.i("sanchit", "resultUri = {$pdfUri}")
     Button(onClick = {launcher.launch("*/*")}){
         Text(text = "Upload Pdf")
     }
 }
+
 @Composable
-fun ShowImage() {
-    var resultUri by remember { mutableStateOf<Uri?>(null) }
+fun ShowImage(imageUri: Uri?, onGetImageUri:(Uri) -> Unit) {
     val context = LocalContext.current
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     val launcher = rememberLauncherForActivityResult(contract =
     ActivityResultContracts.GetContent()) { uri: Uri? ->
-        resultUri = uri
+        if (uri != null) {
+            onGetImageUri(uri)
+        }
     }
 
     Column {
         Box(modifier = Modifier.fillMaxSize()) {
             Column{
 
-                resultUri?.let {
-                    if (Build.VERSION.SDK_INT < 28) {
-                        bitmap = MediaStore.Images
+                imageUri?.let {
+                    bitmap = if (Build.VERSION.SDK_INT < 28) {
+                        MediaStore.Images
                             .Media.getBitmap(context.contentResolver,it)
 
                     } else {
                         val source = ImageDecoder
                             .createSource(context.contentResolver,it)
-                        bitmap = ImageDecoder.decodeBitmap(source)
+                        ImageDecoder.decodeBitmap(source)
                     }
 
                     bitmap.let {  btm ->
@@ -162,16 +191,8 @@ fun ShowImage() {
     }
 }
 @Composable
-fun RadioButtonGroup(){
-    Column(
-    ) {
-
-        var selected by remember {
-            mutableStateOf("")
-        }
-        val updateRadioGroupSelection = { data : String ->
-            selected = data
-        }
+fun RadioButtonGroup(selected: String, updateRadioGroupSelection: (String)->Unit){
+    Column {
         Row {
             RadioButton(
                 selected = selected == "Male",
@@ -209,28 +230,31 @@ fun RadioButtonGroup(){
 }
 
 @Composable
-fun CheckboxGroup(){
+fun CheckboxGroup(onCheckHobbies:(hobby: String, todo: Boolean) -> Unit){
     Column{
         Text(text = "Hobbies")
         Spacer(modifier = Modifier.size(4.dp))
-        CheckboxWithText(txt = "Games")
+        CheckboxWithText(txt = "Games", onCheckHobbies)
         Spacer(modifier = Modifier.size(4.dp))
-        CheckboxWithText(txt = "Music")
+        CheckboxWithText(txt = "Music", onCheckHobbies)
         Spacer(modifier = Modifier.size(4.dp))
-        CheckboxWithText(txt = "Dance")
+        CheckboxWithText(txt = "Dance", onCheckHobbies)
         Spacer(modifier = Modifier.size(4.dp))
-        CheckboxWithText(txt = "Reading")
+        CheckboxWithText(txt = "Reading", onCheckHobbies)
         Spacer(modifier = Modifier.size(4.dp))
     }
 }
 
 @Composable
-fun CheckboxWithText(txt:String){
+fun CheckboxWithText(txt:String,onCheckChange: (hobby : String, toAdd: Boolean) -> Unit){
     var tick by remember{ mutableStateOf(false)}
     Row{
-        Checkbox(checked =tick , onCheckedChange ={tick = !tick} )
+        Checkbox(checked =tick , onCheckedChange = {
+            Log.i("sanchit", "on checked change = $it")
+            onCheckChange(txt, it)
+            tick = it
+        })
         Spacer(modifier = Modifier.size(4.dp))
         Text(text = txt)
     }
-
 }

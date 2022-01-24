@@ -7,6 +7,8 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.view.Surface
+import android.widget.Button
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.composeplayground.ui.theme.ComposePlaygroundTheme
+import org.w3c.dom.Text
 
 class ComposeWorksheet : ComponentActivity() {
 
@@ -77,28 +80,36 @@ fun MyComposable(viewModel: WorksheetViewModel){
             visualTransformation =if (panVisibility) VisualTransformation.None else PasswordVisualTransformation(),
             label = { Text("Pan Number") }
         )
+        Spacer(modifier = Modifier.size(4.dp))
         Button(
             onClick = { panVisibility = !panVisibility }
         ) {
             Text(if(!panVisibility) "View Pan" else "Hide Pan")
         }
 
+
+        Spacer(modifier = Modifier.size(4.dp))
+
+        //gender selection
         val selected = viewModel.genderSelected
         RadioButtonGroup(selected, viewModel.updateRadioGroupSelection)
         Spacer(modifier = Modifier.size(4.dp))
 
+        // hobbies
         CheckboxGroup( viewModel.onCheckHobbies )
 
-        var pdfUri = viewModel.pdfUri
-
+        //pdf upload
+        val pdfUri = viewModel.pdfUri
         UploadPdf(pdfUri, viewModel.onGetPdfUri)
         Spacer(modifier = Modifier.size(10.dp))
 
-
+        //image selection
         val imageUri = viewModel.imageUri
         ShowImage(imageUri, viewModel.onGetImageUri)
 
         Spacer(modifier = Modifier.size(10.dp))
+
+        //save button
         Button(onClick = { viewModel.onSave() }) {
             Text(text = "Save")
         }

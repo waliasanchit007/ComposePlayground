@@ -6,9 +6,30 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.*
 import java.util.*
+import kotlin.coroutines.CoroutineContext
 
+data class WorksheetUiState(
+    val firstName:String = "",
+    val secondName:String = "",
+    val pan:String = "",
+    val genderSelected:String = "",
+    val arrayOfHobbies:MutableList<String> = mutableListOf(),
+    val pdfUri: Uri? = null,
+    val imageUri: Uri? = null,
+    val text: String = ""
+)
 class WorksheetViewModel: ViewModel() {
+
+    private val worksheetUiState = MutableStateFlow(WorksheetUiState())
+    val uiState = worksheetUiState.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        WorksheetUiState()
+    )
+
 
     var firstName by mutableStateOf("")
     private set
@@ -69,6 +90,10 @@ class WorksheetViewModel: ViewModel() {
                 "hobbies are ${arrayOfHobbies.toTypedArray().contentToString()}\n" +
                 "pdf Uri = $pdfUri\nimage Uri = $imageUri"
         Log.i("sanchit", text)
+    }
+
+    val latestNews:Flow<Int> = flow{
+        emit(1)
     }
 
 }

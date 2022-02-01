@@ -19,81 +19,77 @@ data class WorksheetUiState(
     val arrayOfHobbies:MutableList<String> = mutableListOf(),
     val pdfUri: Uri? = null,
     val imageUri: Uri? = null,
-    val text: String = ""
+    val output: String = ""
 )
 class WorksheetViewModel: ViewModel() {
 
+
     private val worksheetUiState = MutableStateFlow(WorksheetUiState())
-    val uiState = worksheetUiState.stateIn(
+    val uiState = worksheetUiState
+        .stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
-        WorksheetUiState()
+        worksheetUiState.value
     )
 
-
-    var firstName by mutableStateOf("")
-    private set
-
-    var secondName by mutableStateOf("")
-        private set
-
-    var pan by mutableStateOf("")
-        private set
-
-    var genderSelected by mutableStateOf("")
-        private set
-
     val onFirstNameChange = {newFirstName: String->
-        firstName = newFirstName
+        worksheetUiState.update {
+            it.copy(firstName = newFirstName)
+        }
     }
+
 
     val onSecondNameChange = {newSecondName: String->
-        secondName = newSecondName
+        worksheetUiState.update {
+            it.copy(secondName = newSecondName)
+        }
     }
     val onPanChange = {newPanChange: String->
-        pan = newPanChange
+        worksheetUiState.update {
+            it.copy(pan = newPanChange)
+        }
     }
 
     val updateRadioGroupSelection = { data : String ->
-        genderSelected = data
+        worksheetUiState.update {
+            it.copy(genderSelected = data)
+        }
     }
-
-    private var arrayOfHobbies = mutableListOf<String>()
 
     val onCheckHobbies = { hobby: String, toAdd:Boolean ->
-        if(toAdd){
-            arrayOfHobbies.add(hobby)
-        }else{
-            arrayOfHobbies.remove(hobby)
+        worksheetUiState.update {
+            val arrayOfHobbies = it.arrayOfHobbies
+            if(toAdd){
+                arrayOfHobbies.add(hobby)
+            }else{
+                arrayOfHobbies.remove(hobby)
+            }
+            it.copy(arrayOfHobbies = arrayOfHobbies)
         }
-        Unit
     }
 
-    var pdfUri by mutableStateOf<Uri?>(null)
-        private set
-    val onGetPdfUri = {
-            receivedPdfUri: Uri-> pdfUri = receivedPdfUri
+    val onGetPdfUri = {receivedPdfUri: Uri->
+    worksheetUiState.update {
+            it.copy(pdfUri = receivedPdfUri)
+        }
     }
 
-    var imageUri by  mutableStateOf<Uri?>(null)
-        private set
-    val onGetImageUri = {
-            receivedImageUri: Uri-> imageUri = receivedImageUri
+    val onGetImageUri = { receivedImageUri: Uri->
+        worksheetUiState.update {
+            it.copy(imageUri = receivedImageUri)
+        }
     }
-
-    var text by mutableStateOf("")
-        private set
 
     fun onSave(){
-         text = "first Name is $firstName\nsecond Name is $secondName\n" +
-                "pan number is $pan\nGender is $genderSelected\n" +
-                "hobbies are ${arrayOfHobbies.toTypedArray().contentToString()}\n" +
-                "pdf Uri = $pdfUri\nimage Uri = $imageUri"
-        Log.i("sanchit", text)
-    }
 
-    val latestNews:Flow<Int> = flow{
-        emit(1)
+        worksheetUiState.update {
+            val output = "first Name is ${it.firstName}\nsecond Name is ${it.secondName}\n" +
+                    "pan number is ${it.pan}\nGender is ${it.genderSelected}\n" +
+                    "hobbies are ${it.arrayOfHobbies.toTypedArray().contentToString()}\n" +
+                    "pdf Uri = ${it.pdfUri}\nimage Uri = ${it.imageUri}"
+            Log.i("sanchit", output)
+            it.copy(output = output)
+        }
     }
 
 }

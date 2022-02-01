@@ -49,9 +49,8 @@ class ComposeWorksheet : ComponentActivity() {
 
 @Composable
 fun MyComposable(viewModel: WorksheetViewModel){
-    val firstName = viewModel.firstName
-    val secondName = viewModel.secondName
-    val pan  = viewModel.pan
+
+    val uiState by viewModel.uiState.collectAsState()
     var panVisibility by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier
@@ -59,21 +58,21 @@ fun MyComposable(viewModel: WorksheetViewModel){
         .verticalScroll(rememberScrollState(), true)
     ) {
         TextField(
-            value = firstName,
+            value = uiState.firstName,
             onValueChange = {
                 viewModel.onFirstNameChange(it)
             },
             label = { Text("First Name") }
         )
         TextField(
-            value = secondName,
+            value = uiState.secondName,
             onValueChange = {
                 viewModel.onSecondNameChange(it)
             },
             label = { Text("Second Name") }
         )
         TextField(
-            value = pan,
+            value = uiState.pan,
             onValueChange = {
                 viewModel.onPanChange(it)
             },
@@ -91,7 +90,7 @@ fun MyComposable(viewModel: WorksheetViewModel){
         Spacer(modifier = Modifier.size(4.dp))
 
         //gender selection
-        val selected = viewModel.genderSelected
+        val selected = uiState.genderSelected
         RadioButtonGroup(selected, viewModel.updateRadioGroupSelection)
         Spacer(modifier = Modifier.size(4.dp))
 
@@ -99,12 +98,12 @@ fun MyComposable(viewModel: WorksheetViewModel){
         CheckboxGroup( viewModel.onCheckHobbies )
 
         //pdf upload
-        val pdfUri = viewModel.pdfUri
+        val pdfUri = uiState.pdfUri
         UploadPdf(pdfUri, viewModel.onGetPdfUri)
         Spacer(modifier = Modifier.size(10.dp))
 
         //image selection
-        val imageUri = viewModel.imageUri
+        val imageUri = uiState.imageUri
         ShowImage(imageUri, viewModel.onGetImageUri)
 
         Spacer(modifier = Modifier.size(10.dp))
@@ -114,7 +113,7 @@ fun MyComposable(viewModel: WorksheetViewModel){
             Text(text = "Save")
         }
         Spacer(modifier = Modifier.size(10.dp))
-        Text(text = viewModel.text)
+        Text(text = uiState.output)
     }
 }
 

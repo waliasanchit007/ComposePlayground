@@ -6,14 +6,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
-import android.view.Surface
-import android.widget.Button
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -25,15 +22,34 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.get
 import com.example.composeplayground.ui.theme.ComposePlaygroundTheme
+import com.example.composeplayground.data.WorksheetRepository
 import org.w3c.dom.Text
 
 class ComposeWorksheet : ComponentActivity() {
+//
+//    fun createWithFactory(
+//        create: () -> ViewModel
+//    ): ViewModelProvider.Factory {
+//        return object : ViewModelProvider.AndroidViewModelFactory {
+//            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//                @Suppress("UNCHECKED_CAST")// Casting T as ViewModel
+//                return create.invoke() as T
+//            }
+//        }
+//    }
 
-    private val viewModel by viewModels<WorksheetViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+//        val appContainer = (application as ComposeAppication).container
+        val viewModel = WorksheetViewModel(context = applicationContext)
+//        val viewmodelFactory = WorksheetViewmodelFactory(appContainer.worksheetRepository)
+//        val viewModel = ViewModelProvider(viewModelStore, viewmodelFactory)[WorksheetViewModel::class.java]
         setContent {
             ComposePlaygroundTheme {
                 // A surface container using the 'background' color from the theme
@@ -145,7 +161,6 @@ fun ShowImage(imageUri: Uri?, onGetImageUri:(Uri) -> Unit) {
     Column {
         Box() {
             Column{
-
                 imageUri?.let {
                     bitmap = if (Build.VERSION.SDK_INT < 28) {
                         MediaStore.Images

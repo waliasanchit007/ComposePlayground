@@ -1,15 +1,17 @@
 package com.example.composeplayground
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.*
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.example.composeplayground.data.DIGraph
+import com.example.composeplayground.data.Person
+import com.example.composeplayground.data.WorksheetRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import java.util.*
-import kotlin.coroutines.CoroutineContext
 
 data class WorksheetUiState(
     val firstName:String = "",
@@ -21,13 +23,16 @@ data class WorksheetUiState(
     val imageUri: Uri? = null,
     val output: String = ""
 )
-class WorksheetViewModel: ViewModel() {
 
 
+class WorksheetViewModel(val context:Context) {
+
+
+    private val repository: WorksheetRepository = DIGraph.createWorksheetRepo(context)
+    val a = collectData()
     private val worksheetUiState = MutableStateFlow(WorksheetUiState())
-    val uiState = worksheetUiState
-        .stateIn(
-        viewModelScope,
+    val uiState = worksheetUiState.stateIn(
+        CoroutineScope(Dispatchers.Main),
         SharingStarted.Eagerly,
         worksheetUiState.value
     )
@@ -38,12 +43,12 @@ class WorksheetViewModel: ViewModel() {
         }
     }
 
-
     val onSecondNameChange = {newSecondName: String->
         worksheetUiState.update {
             it.copy(secondName = newSecondName)
         }
     }
+
     val onPanChange = {newPanChange: String->
         worksheetUiState.update {
             it.copy(pan = newPanChange)
@@ -80,16 +85,52 @@ class WorksheetViewModel: ViewModel() {
         }
     }
 
-    fun onSave(){
 
-        worksheetUiState.update {
-            val output = "first Name is ${it.firstName}\nsecond Name is ${it.secondName}\n" +
-                    "pan number is ${it.pan}\nGender is ${it.genderSelected}\n" +
-                    "hobbies are ${it.arrayOfHobbies.toTypedArray().contentToString()}\n" +
-                    "pdf Uri = ${it.pdfUri}\nimage Uri = ${it.imageUri}"
-            Log.i("sanchit", output)
-            it.copy(output = output)
+     private fun collectData(){
+        CoroutineScope(Dispatchers.IO).launch {
+            var l: List<Person>
+            repository.getPerson().collect {
+                if (!it.isNullOrEmpty()) {
+                    l = it
+                    worksheetUiState.update { uiState ->
+                        var finalOutput = ""
+                        l.forEach {
+                            val output =
+                                "first Name is ${it.firstName}\nsecond Name is ${it.secondName}\n" +
+                                        "pan number is ${it.pan}\nGender is ${it.genderSelected}\n" +
+                                        "hobbies are ${
+                                            it.arrayOfHobbies?.toTypedArray().contentToString()
+                                        }\n" +
+                                        "pdf Uri = ${it.pdfUri}\nimage Uri = ${it.imageUri}\n\n\n"
+                            finalOutput += output
+                        }
+
+                        Log.i("sanchit", finalOutput)
+                        uiState.copy(output = finalOutput)
+                    }
+                }
+            }
         }
     }
+    fun onSave(){
+        val person = worksheetUiState.value.let {
+            Person(
+                it.firstName,
+                it.secondName,
+                it.pan,
+                it.genderSelected,
+                it.arrayOfHobbies,
+                it.pdfUri.toString(),
+                it.imageUri.toString()
+            )
+        }
 
+        CoroutineScope(Dispatchers.IO).launch {
+            repository.insert(person)
+        }
+
+        worksheetUiState.update {
+            WorksheetUiState()
+        }
+    }
 }
